@@ -22,10 +22,9 @@ module mod_n_counter #(
     input logic clk,
     input logic rst,
     input logic enable,
-    output logic [WIDTH-1:0] count
+    output logic [WIDTH-1:0] count = '0
 );
-  localparam logic [WIDTH-1:0] Max = WIDTH'(N - 1);  // width-matched for relational operations,
-  //and critically avoids the truncation edge case bug for power-of-2 N values
+  localparam logic [WIDTH-1:0] Max = WIDTH'(N - 1);
   logic [WIDTH-1:0] next_count;
 
   always_ff @(posedge clk)
