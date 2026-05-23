@@ -1,3 +1,10 @@
+/* PWM Generator
+Produces a periodic output with period PERIOD_CYCLES clock cycles,
+held high for the first DUTY_CYCLES cycles of each period and low
+for the remainder. Asserting rst restarts the period from the next
+rising clock edge.
+*/
+
 `timescale 1ns / 1ps
 
 module pwm_generator #(
