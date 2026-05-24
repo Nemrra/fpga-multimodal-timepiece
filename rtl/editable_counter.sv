@@ -4,7 +4,7 @@ module editable_counter #(
     parameter int WIDTH = 6  // Amount of registers containing count
 ) (
     input logic clk,
-    input logic tick,  // count increments on tick when edit_mode is low
+    input logic tick,  // count increments on tick when edit_mode is high ?
     input logic edit_mode,
     input logic inc,  // count increments by one when edit_mode is high
     input logic dec,  // count decrements by one when edit_mode is low
