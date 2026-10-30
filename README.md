@@ -1,88 +1,58 @@
-# Digital Watch Project (ELEN20006)
+# FPGA Multimodal Timepiece
 
-This repository provides the starter code, automated testing infrastructure including formal verification tools, and the development environment (via a VS Code dev container) for the Digital Watch Project.
+A watch, stopwatch and countdown timer written in SystemVerilog, running on an Intel Cyclone V FPGA (Terasic DE1-SoC). It runs off the board's 50 MHz clock, reads the four push buttons and ten switches, and drives all six seven-segment displays.
 
-- Project documentation is in `docs/`.
-  - Assignment #1 Version 1.3
-  - Assignment #2 Version 1.0
-- Project Version 1.3
-- Release Date: 2 May 2026
+## What it does
 
-## Quick Start Checklist
+Switches SW1 and SW0 pick the app. All three run at the same time, so the watch keeps time while you use the stopwatch or timer.
 
-1. Install VS Code, Docker Desktop, Git, and the VS Code `Dev Containers` extension.
-2. Git clone this repository.
-3. Ensure Docker Desktop is running.
-4. Open this folder in VS Code.
-5. Select `Reopen in Container` when prompted.
+| SW1 SW0 | App |
+| :-- | :-- |
+| 00 or 10 | Watch |
+| 01 | Stopwatch |
+| 11 | Timer |
 
-If you do not see the prompt, ensure that the `.devcontainer` folder is at the top level of your project. Open the root directory in VS Code (not a parent folder). Then, run `Dev Containers: Reopen in Container` from the Command Palette.
+**Watch.** Shows hours, minutes and seconds. Hold KEY3 for a second to set the time. The selected field flashes, KEY1 and KEY0 move it up and down, and holding either one repeats at 10 Hz. Each press of KEY3 moves on from seconds to minutes to hours and then back to normal running. The seconds tick restarts when you leave set mode, so the time you set is exactly the time you get.
 
-## Important Notes
+**Stopwatch.** Counts minutes, seconds and hundredths. KEY0 starts and stops it. While it's running, KEY1 freezes the display for a lap and keeps counting underneath. Once it's stopped, KEY1 resets it.
 
-1. You are responsible for maintaining regular backups of your work. Git is strongly recommended, although it is not essential.
-2. During the project, you may be asked to update to a newer version of this repository. This is a common scenario in real-world, team-based development. You can either run `git pull` or download the new version to a separate folder and copy your current `rtl/` directory into it. (This is why you should only modify files within the `rtl/` directory.)
-3. If you encounter unexpected behavior, first try running `Dev Containers: Rebuild Container`.
+**Timer.** Set it the same way as the watch, then start and pause it with KEY0. It stops by itself at zero, and it won't go into set mode while it's running.
 
-## Why Use VS Code for This Project?
+**Brightness.** SW9 and SW8 dim every app in four steps, from 12.5% up to full, by pulsing the display blanking at 1 kHz. The steps are Gray-coded, so each change in brightness only needs one switch flipped.
 
-- Quartus is not a true development environment; it lacks many standard features, making coding and iteration much slower than necessary.
-- VS Code provides efficient editing, continuous linting, and straightforward access to automated tests.
-- Using the dev container ensures a consistent toolchain across all platforms.
-- VS Code is an industry-standard IDE, so proficiency with it is a transferable professional skill.
+## How it's built
 
-## New to VS Code?
+Everything is made from small parameterised blocks: counters, rate generators, edge detectors, and button hold and auto-repeat logic. Each block was tested on its own before going into anything bigger, so building the apps was mostly wiring together parts that already worked.
 
-Use the following steps to install the required extension:
+New features sit on top of old ones instead of rewriting them. The stopwatch's lap freeze sits after its counter, and brightness control is a wrapper between the apps and the displays that neither side knows about. Each app's inputs and outputs travel as one packed struct, so switching apps is a single multiplexer.
 
-1. Open VS Code.
-2. Select `File > Open Folder...` and choose this project folder.
-3. Open Extensions using the left sidebar icon, or press `Ctrl+Shift+X`.
-4. Search for `Dev Containers`.
-5. Install the extension published by Microsoft.
+Worst-case drift is about 4.3 seconds a day, set by the tolerance of the board's oscillator.
 
-Tip: You can also install extensions via the Command Palette (`Ctrl+Shift+P`) using `Extensions: Install Extensions`.
+## Testing
 
-## Useful VS Code Features
+- 55 cocotb simulation tests covering every block and all three apps, all passing
+- Verilator and Icarus Verilog lint on every source file
+- SymbiYosys formal checks on the counters, the lap snapshot, the stopwatch and timer control, and the brightness wrapper
 
-- Split editor: Right-click a tab and select `Split Right` to view design files and testbench files side by side.
-- Multi-cursor editing: Hold `Alt` and click in multiple locations (or use `Ctrl+Alt+Down/Up`) to edit repeated text efficiently.
-- Integrated terminal: Use `Ctrl+backtick` to run compile and test commands without leaving the editor.
-- Search across files: Press `Ctrl+Shift+F` to locate modules, signals, and TODO items across the project.
-- Command Palette: Press `Ctrl+Shift+P` to run commands such as reopening or rebuilding the dev container.
+## Running it
 
-## Included Tools
+Open the repo in VS Code and reopen it in the dev container, which has the full toolchain (Icarus Verilog, Verilator, cocotb, Yosys and SymbiYosys).
 
-The dev container includes:
+```bash
+pytest -m "not formal"   # simulation tests and lint
+pytest -m formal         # formal checks
+```
 
-- `iverilog`
-- `verilator`
-- `pytest`
-- `yosys`
-- `sby`
+To put it on the board, build in Quartus with `top_de1_soc` as the top level, and swap its `user_top` instance for `user_top_brightness_timepiece`.
 
-These tools support compilation, simulation, linting, synthesis and formal verification.
+## Layout
 
-## Included VS Code Extensions
+```
+rtl/            the design
+tests/          cocotb tests
+sby/            formal properties
+tb/             waveform testbenches
+.devcontainer/  toolchain
+```
 
-- `chipsalliance.verible`: Provides SystemVerilog formatting and basic linting.
-- `eirikpre.systemverilog`: Provides SystemVerilog language support, including syntax highlighting and code navigation.
-- `lramseyer.vaporview`: Provides in-editor waveform viewing for formats such as VCD and FST.
-- `ms-python.python`: Provides Python support for testing scripts.
-- `charliermarsh.ruff`: Provides Python linting and formatting.
-
-## Project Structure
-
-- `rtl/` --- SystemVerilog source files (place your assessed work here)
-- `tb/` --- manual testbenches for debugging your design
-- `sby/` --- formal verification tests
-- `tests/` --- automated pytest/cocotb tests
-- `templates/` --- starter templates for your project
-- `demos/` --- small example designs to familiarise yourself with the tools
-- `.devcontainer/` --- container configuration for the development environment
-
-## Troubleshooting
-
-- Ensure the container is activated (check the bottom left corner of VS Code for the container status).
-- If the container does not start, confirm Docker Desktop is running.
-- If expected extensions do not appear, or if the environment is misbehaving, run `Dev Containers: Rebuild Container`.
+The dev container, test harness, formal properties and board wrapper template come from Jonathan Manton's Digital Systems starter repository. The rest of `rtl/` is my design.
